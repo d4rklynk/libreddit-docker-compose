@@ -1,0 +1,49 @@
+version: "3"
+
+services:
+
+  libreddit:
+    image: libreddit/libreddit
+    restart: unless-stopped
+    container_name: libreddit
+    user: nobody
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    networks:
+      - libreddit
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "--tries=1", "http://localhost:8080/settings"]
+      interval: 5m
+      timeout: 3s
+
+  swag:
+    image: ghcr.io/linuxserver/swag
+    container_name: swag
+    restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - URL=example.com
+      - SUBDOMAINS=libreddit
+      - VALIDATION=http
+      - ONLY_SUBDOMAINS=true
+      - EMAIL=changeme@example.com
+        #- STAGING=true
+    volumes:
+      - ./swag:/config:Z
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - 443:443
+      - 80:80
+    networks:
+      - libreddit
+    security_opt:
+      - no-new-privileges:true
+    cap_add:
+      - NET_ADMIN
+
+networks:
+  libreddit:
